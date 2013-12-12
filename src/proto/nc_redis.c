@@ -60,6 +60,7 @@ redis_arg0(struct msg *r)
     case MSG_REQ_REDIS_AUTH:
 
     case MSG_REQ_REDIS_PING:
+    case MSG_REQ_REDIS_QUIT:
         return true;
 
     default:
@@ -104,7 +105,6 @@ redis_arg1(struct msg *r)
     case MSG_REQ_REDIS_ZRANK:
     case MSG_REQ_REDIS_ZREVRANK:
     case MSG_REQ_REDIS_ZSCORE:
-    case MSG_REQ_REDIS_PING:
         return true;
 
     default:
@@ -571,6 +571,11 @@ redis_parse_req(struct msg *r)
                     break;
                 }
 
+                if (str4icmp(m, 'q', 'u', 'i', 't')) {
+                    r->type = MSG_REQ_REDIS_QUIT;
+                    break;
+                }
+
                 break;
 
             case 5:
@@ -945,7 +950,7 @@ redis_parse_req(struct msg *r)
             break;
 
         case SW_REQ_TYPE_LF:
-            if (r->type == MSG_REQ_REDIS_PING) {
+            if (r->type == MSG_REQ_REDIS_PING || r->type == MSG_REQ_REDIS_QUIT) {
                 goto done; 
             }
             else {
@@ -1502,7 +1507,7 @@ fragment:
     return;
 
 done:
-    ASSERT(r->type == MSG_REQ_REDIS_PING || (r->type > MSG_UNKNOWN && r->type < MSG_SENTINEL) );
+    ASSERT(r->type > MSG_UNKNOWN && r->type < MSG_SENTINEL);
     r->pos = p + 1;
     ASSERT(r->pos <= b->last);
     r->state = SW_START;
